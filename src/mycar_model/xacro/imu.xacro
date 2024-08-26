@@ -1,0 +1,29 @@
+<!-- IMU相关的 xacro 文件 -->
+<robot name="my_imu" xmlns:xacro="http://wiki.ros.org/xacro">
+    <!-- IMU属性 -->
+    <xacro:property name="imu_length" value="0.015" /> <!-- IMU长度(x) -->
+    <xacro:property name="imu_width" value="0.015" /> <!-- IMU宽度(y) -->
+    <xacro:property name="imu_height" value="0.008" /> <!-- IMU高度(z) -->
+    <xacro:property name="imu_x" value="0.04" /> <!-- IMU安装的x坐标 -->
+    <xacro:property name="imu_y" value="0.0" /> <!-- IMU安装的y坐标 -->
+    <xacro:property name="imu_z" value="${base_link_length / 2 + imu_height / 2}" /> <!-- IMU安装的z坐标:底盘高度 / 2 + IMU高度 / 2  -->
+
+    <!-- IMU关节以及link -->
+    <link name="imu">
+        <visual>
+            <geometry>
+                <box size="${imu_length} ${imu_width} ${imu_height}" />
+            </geometry>
+            <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0" />
+            <material name="green">
+                <color rgba="0.0 0.5 0.0 1.0" />
+            </material>
+        </visual>
+    </link>
+
+    <joint name="imu2base_link" type="fixed">
+        <parent link="base_link" />
+        <child link="imu" />
+        <origin xyz="${imu_x} ${imu_y} ${imu_z}" />
+    </joint>
+</robot>
