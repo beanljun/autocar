@@ -18,8 +18,11 @@ namespace robot
             ~robot();
             bool init();                  
             bool deal(double RobotV, double RobotYawRate);
-            double getHeading() const {return th_;}
-            void setHeading(double th) {th_ = th * 0.01745;} //角度转弧度
+
+            void setHeading(double th);
+            static int getInitSamples() { return INIT_SAMPLES; }
+            bool isInitialized() const { return initialized_; }
+            int getInitialHeadingsSize() const { return initial_headings_.size(); }
         
         private:
             void calcOdom();               //里程计计算
@@ -41,6 +44,12 @@ namespace robot
             ros::NodeHandle nh;
             ros::Publisher pub_;
             tf::TransformBroadcaster odom_broadcaster_;
+        
+        private:
+            double initial_heading_;
+            static const int INIT_SAMPLES = 10;
+            std::vector<double> initial_headings_;
+            bool initialized_ = false;
     };
     
 }

@@ -1,4 +1,5 @@
 #include <vector>
+#include <numeric>
 #include "robot_bringup/robot.h"
 #include "robot_bringup/mbot_linux_serial.h"
 using namespace std;
@@ -39,6 +40,30 @@ namespace robot
         pub_ = nh.advertise<nav_msgs::Odometry>("odom", 50);		
         
         return true;
+    }
+
+    void robot::setHeading(double th)
+    {  
+        if (!initialized_) {
+            if (initial_headings_.size() < INIT_SAMPLES) {
+                initial_headings_.push_back(th);
+            }
+            if (initial_headings_.size() >= INIT_SAMPLES) {
+                double sum = std::accumulate(initial_headings_.begin(), initial_headings_.end(), 0.0);
+                initial_heading_ = sum / INIT_SAMPLES;
+                initialized_ = true;
+                ROS_INFO("*****Initializing: %.4f ", initial_heading_);
+            }
+        } else {
+            ROS_INFO("Initializing: %.4f ", initial_heading_);
+            double relative_heading = th - initial_heading_;
+            if (relative_heading > M_PI) {
+                relative_heading -= 2 * M_PI;
+            } else if (relative_heading < -M_PI) {
+                relative_heading += 2 * M_PI;
+            }
+            th_ = relative_heading;
+        }
     }
  
     /********************************************************
@@ -125,7 +150,7 @@ namespace robot
     {
         // 向STM32发送对机器人的预期控制速度，以及预留信号控制位
         writeSpeed(RobotV, RobotYawRate, sensFlag_);
-        // 从STM32读取机器人实际线速度，角速度和角度，以及预留信号控制位
+        // 从STM32读取机器人实际线速度，角速度，以及预留信号控制位
         readSpeed(vx_, vth_, receFlag_);
         // 里程计计算
         calcOdom();
@@ -133,5 +158,7 @@ namespace robot
         pubOdomAndTf();
         return true;
     }
+
+
 }
 

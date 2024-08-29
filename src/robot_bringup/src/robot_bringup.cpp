@@ -5,7 +5,7 @@
 
 double RobotV_ = 0;
 double RobotYawRate_ = 0;
-double heading = 0;
+double heading = std::numeric_limits<double>::quiet_NaN();
 ros::Subscriber sub;
 ros::Subscriber heading_sub;
 
@@ -19,7 +19,16 @@ void cmdCallback(const geometry_msgs::Twist& msg)
 
 void headingCallback(const sensor_msgs::Imu& msg)
 {
-    heading = msg.orientation.z;
+    // tf::Quaternion q(
+    //     msg.orientation.x,
+    //     msg.orientation.y,
+    //     msg.orientation.z,
+    //     msg.orientation.w);
+    // tf::Matrix3x3 m(q);
+    // double roll, pitch, yaw;
+    // m.getRPY(roll, pitch, yaw);
+    // heading = yaw;
+    heading = msg.orientation.z * M_PI / 180;
 }
 
 int main(int argc, char** argv)
@@ -36,15 +45,26 @@ int main(int argc, char** argv)
     }
     ROS_INFO("myrobot initialized successful.");
 
-    sub = nh.subscribe("cmd_vel", 50, cmdCallback);
-    heading_sub = nh.subscribe("imu", 50, headingCallback);
-
+    sub = nh.subscribe("cmd_vel", 100, cmdCallback);
+    heading_sub = nh.subscribe("imu", 100, headingCallback);
+    int init_count = 0;
     // 循环运行
-    ros::Rate loop_rate(20);
+    ros::Rate loop_rate(50);
     while (ros::ok()) 
     {
         ros::spinOnce();
+        // ROS_INFO("Current heading: %f", heading);
+        if (std::isnan(heading)) {
+            // ROS_INFO("Waiting for valid heading...");
+            loop_rate.sleep();
+            continue;
+        }
         myrobot.setHeading(heading);
+        if (!myrobot.isInitialized()) {
+            ROS_INFO("Initializing: %d / %d", myrobot.getInitialHeadingsSize(), myrobot.getInitSamples());
+            loop_rate.sleep();
+            continue;
+        }
         // 机器人控制
         myrobot.deal(RobotV_, RobotYawRate_);
         loop_rate.sleep();
